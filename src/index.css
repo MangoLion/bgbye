@@ -11,3 +11,29 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+
+
+
+.slider-example-focus {
+  /* #549ef7 #ffa658
+    The style below isn't necessary.
+    It has been added for the sake of smoothness.
+  
+  transition: box-shadow 200ms ease-in-out;*/
+  box-shadow: 0px 0px 10px 5px #6464647a;
+  display: block;
+
+  --default-handle-shadow: 0px 0px 5px rgba(0, 0, 0, 1);
+  --divider-shadow: 0px 0px 5px rgba(0, 0, 0, 0.5);
+  --divider-width:2;
+  --default-handle-width: 150px;
+  --divider-color: #549ef7;
+  --default-handle-color: #549ef7;
+  ;
+}
+
+.slider-example-focus:focus {
+  outline: none;
+  box-shadow: 0px 0px 10px 5px #6464647a;
+}

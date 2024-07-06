@@ -1,0 +1,11 @@
+Improve UI:
+- put img in Paper, put togglebtns in Paper, outside of img's dashed Paper
+- remove dash on submit
+
+Add label to checkboxes ("Use models")
+
+add dropdown for download types
+- webp/png
+- mov/gif/webm
+
+add download progressbar
