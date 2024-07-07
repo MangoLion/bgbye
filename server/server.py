@@ -160,10 +160,11 @@ async def process_video(video_path, method, video_id):
         frame_count = int(stdout.decode().strip())
         logger.info(f"Video frame count: {frame_count}")
 
-        if frame_count > 250:
-            logger.warning(f"Video too long: {frame_count} frames")
-            processing_status[video_id] = {'status': 'error', 'message': 'Video too long (max 250 frames)'}
-            return
+        #DISABLED VIDEO LENGTH LIMIT
+        #if frame_count > 250:
+        #    logger.warning(f"Video too long: {frame_count} frames")
+        #    processing_status[video_id] = {'status': 'error', 'message': 'Video too long (max 250 frames)'}
+        #    return
 
         # Create a unique directory for this video's frames
         frames_dir = os.path.join(FRAMES_DIR, video_id)
