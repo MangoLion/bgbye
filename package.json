@@ -22,15 +22,16 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "concurrently \"react-scripts start\" \"cd server && ./run.sh\"",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject",
-    "deploy": "npm run build && wrangler pages deploy ./build",
-    "preview": "npm run build && wrangler pages dev ./build",
-    "start-server": "cd server && ./run.sh",
-    "setup-server": "cd server && chmod +x setup.sh && chmod +x run.sh && ./setup.sh"
-  },
+  "start": "concurrently \"PORT=9877 react-scripts start\" \"cd server && ./run.sh\"",
+  "build": "react-scripts build",
+  "test": "react-scripts test",
+  "eject": "react-scripts eject",
+  "deploy": "npm run build && wrangler pages deploy ./build",
+  "preview": "npm run build && wrangler pages dev ./build",
+  "start-server": "cd server && ./run.sh",
+  "setup-server": "cd server && chmod +x setup.sh && chmod +x run.sh && ./setup.sh"
+},
+
   "eslintConfig": {
     "extends": [
       "react-app",
