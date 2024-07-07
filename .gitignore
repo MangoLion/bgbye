@@ -1,5 +1,13 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# Bytecode
+__pycache__/
+*.py[cod]
+
+# Python virtual environment
+venv/
+ENV/
+
 # dependencies
 /node_modules
 /.pnp
@@ -18,6 +26,7 @@
 .env.test.local
 .env.production.local
 
+# Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -25,3 +34,10 @@ yarn-error.log*
 # wrangler files
 .wrangler
 .dev.vars
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# PyCharm and VSCode settings
+.idea/
+.vscode/

@@ -202,7 +202,7 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       formData.append('file', file);
       formData.append('method', videoMethod);
 
-      const response = await axios.post('${process.env.REACT_APP_API_URL}/remove_background_video/', formData, {
+      const response = await axios.post(`${process.env.REACT_APP_API_URL}/remove_background_video/`, formData, {
         withCredentials: false,
       });
 
@@ -266,7 +266,7 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
                   <img slot="first" src={selectedFile} alt="Original" style={{ width: '100%' }} />
                   <img slot="second" src={processedFiles[activeMethod]} alt="Processed" style={{ width: '100%' }} />
                   {true && <svg slot="handle" xmlns="http://www.w3.org/2000/svg" width="100" viewBox="-8 -3 16 6">
-                    <path stroke="#549ef7" d="M -5 -2 L -7 0 L -5 2 M -5 -2 L -5 2 M 5 -2 L 7 0 L 5 2 M 5 -2 L 5 2" strokeWidth="1" fill="#549ef7" vector-effect="non-scaling-stroke"></path>
+                    <path stroke="#549ef7" d="M -5 -2 L -7 0 L -5 2 M -5 -2 L -5 2 M 5 -2 L 7 0 L 5 2 M 5 -2 L 5 2" strokeWidth="1" fill="#549ef7" vectorEffect="non-scaling-stroke"></path>
                   </svg>}
                 </ImgComparisonSlider>
               ) : (

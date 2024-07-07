@@ -22,12 +22,14 @@
     "web-vitals": "^2.1.4"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "concurrently \"react-scripts start\" \"cd server && ./run.sh\"",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "npm run build && wrangler pages deploy ./build",
-    "preview": "npm run build && wrangler pages dev ./build"
+    "preview": "npm run build && wrangler pages dev ./build",
+    "start-server": "cd server && ./run.sh",
+    "setup-server": "cd server && chmod +x setup.sh && chmod +x run.sh && ./setup.sh"
   },
   "eslintConfig": {
     "extends": [
@@ -48,6 +50,7 @@
     ]
   },
   "devDependencies": {
+    "concurrently": "^8.2.2",
     "wrangler": "^3.63.1"
   }
 }
