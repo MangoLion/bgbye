@@ -192,11 +192,12 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       const duration = await getVideoDuration(file);
       const estimatedFrameCount = Math.ceil(duration * 24); // Assuming 24 fps
 
-      if (estimatedFrameCount > 250) {
-        showErrorToast(`Video too long (${estimatedFrameCount} estimated frames). Maximum allowed: 250 frames.`);
-        setProcessing({ [videoMethod]: false });
-        return;
-      }
+      //DISABLED VIDEO LENGTH LIMIT
+      //if (estimatedFrameCount > 250) {
+      //  showErrorToast(`Video too long (${estimatedFrameCount} estimated frames). Maximum allowed: 250 frames.`);
+      //  setProcessing({ [videoMethod]: false });
+      //  return;
+      //}
 
       const formData = new FormData();
       formData.append('file', file);
