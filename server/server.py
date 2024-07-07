@@ -25,11 +25,16 @@ logger = logging.getLogger(__name__)
 
 # Add ORMBG model initialization
 ormbg_model_path = os.path.join("ormbg", "ormbg.pth")
-ormbg_processor = ORMBGProcessor(ormbg_model_path)
-if torch.cuda.is_available():
-    ormbg_processor.to("cuda")
-else:
-    ormbg_processor.to("cpu")
+try:
+    ormbg_processor = ORMBGProcessor(ormbg_model_path)
+    if torch.cuda.is_available():
+        ormbg_processor.to("cuda")
+    else:
+        ormbg_processor.to("cpu")
+except FileNotFoundError:
+    logger.error(f"ORMBG model file not found: {ormbg_model_path}")
+    print("Error: ORMBG model file not found. Please run 'npm run setup-server' to download it.")
+    exit(1)
 
 app = FastAPI()
 
