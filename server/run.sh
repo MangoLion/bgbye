@@ -4,4 +4,4 @@
 source venv/bin/activate
 
 # Start the server
-python server.py
+python3 server.py
