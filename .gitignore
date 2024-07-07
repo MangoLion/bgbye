@@ -41,3 +41,19 @@ yarn-error.log*
 # PyCharm and VSCode settings
 .idea/
 .vscode/
+
+# Machine Learning model files
+*.pkl
+*.pickle
+*.h5
+*.hdf5
+*.joblib
+*.onnx
+*.tflite
+*.pb
+*.ckpt
+*.weights
+*.pt
+*.pth
+*.torch
+*.bin

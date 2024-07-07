@@ -17,10 +17,19 @@ import logging
 import asyncio
 from datetime import datetime, timedelta
 import torch
+from ormbg import ORMBGProcessor 
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+
+# Add ORMBG model initialization
+ormbg_model_path = os.path.join("ormbg", "ormbg.pth")
+ormbg_processor = ORMBGProcessor(ormbg_model_path)
+if torch.cuda.is_available():
+    ormbg_processor.to("cuda")
+else:
+    ormbg_processor.to("cpu")
 
 app = FastAPI()
 
@@ -79,6 +88,10 @@ def process_with_bria(image):
     no_bg_image.paste(image, mask=mask)
     return no_bg_image
 
+def process_with_ormbg(image):
+    result = ormbg_processor.process_image(image)
+    return result
+
 def process_with_inspyrenet(image):
     return inspyrenet_model.process(image, type='rgba')
 
@@ -101,6 +114,8 @@ async def remove_background(file: UploadFile = File(...), method: str = Form(...
             torch.cuda.empty_cache()
         elif method in ['u2net', 'u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
             no_bg_image = process_with_rembg(image, model=method)
+        elif method == 'ormbg':
+            no_bg_image = process_with_ormbg(image)
         else:
             raise HTTPException(status_code=400, detail="Invalid method")
         
@@ -126,6 +141,8 @@ async def process_frame(frame_path, method):
         processed_frame = await asyncio.to_thread(process_with_inspyrenet, img)
     elif method in ['u2net', 'u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
         processed_frame = await asyncio.to_thread(process_with_rembg, img, model=method)
+    elif method == 'ormbg':
+        processed_frame = await asyncio.to_thread(process_with_ormbg, img)
     else:
         raise ValueError("Invalid method")
     

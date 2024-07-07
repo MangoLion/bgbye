@@ -30,6 +30,7 @@ function App() {
     inspyrenet: true,
     u2net: true,
     u2net_human_seg: true,
+    ormbg: true,
     'isnet-general-use': true,
     'isnet-anime': true
   });

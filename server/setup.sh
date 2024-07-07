@@ -24,4 +24,7 @@ if [ -f requirements.txt ]; then
     pip install -r requirements.txt
 fi
 
+echo "Downloading the ORMBG model..."
+wget -O ormbg/ormbg.pth https://huggingface.co/schirrmacher/ormbg/resolve/main/models/ormbg.pth
+
 echo "Setup completed successfully!"
