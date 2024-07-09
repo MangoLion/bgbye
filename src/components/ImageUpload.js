@@ -448,11 +448,11 @@ return (
             right: isPortrait ? '1em' : 'auto',
             zIndex: isPortrait ? 1000 : 'auto',
           }}>
-            <Paper sx={{
+           {(!isPortrait || fileType !== 'video') && <Paper sx={{
               backgroundColor: isPortrait ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0)',
               padding: isPortrait ? 1 : 0,
             }} elevation={2}>
-              <Typography variant="body2" color="text.secondary" align="center">
+               <Typography variant="body2" color="text.secondary" align="center">
                 Methods
               </Typography>
               {selectedFile && localSelectedModels && fileType === 'image' && (
@@ -491,7 +491,7 @@ return (
                   }
                 </ToggleButtonGroup>
               )}
-            </Paper>
+            </Paper>}
           {selectedFile && fileType === 'video' && (
         <Box sx={{ mt: 2 }}>
           <FormControl fullWidth>
@@ -501,12 +501,13 @@ return (
               labelId="video-method-label"
               value={videoMethod}
               label="Method"
+              sx={{backgroundColor:isPortrait? theme.palette.info.contrastText :''}}
               onChange={handleVideoMethodChange}
             >
               {Object.entries(localSelectedModels)
                 .filter(([_, isSelected]) => isSelected)
                 .map(([method, _]) => (
-                  <MenuItem key={method} value={method}>{method}</MenuItem>
+                  <MenuItem key={method} value={method}>{ModelsInfo[method].displayName}</MenuItem>
                 ))
               }
             </Select>
