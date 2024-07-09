@@ -27,6 +27,12 @@
    ```
    **Make sure to restart your terminal after!**
 
+### AMD GPU
+Goto `./server/setp.sh` and replace the index url with
+`--index-url https://download.pytorch.org/whl/rocm6.0`
+
+Do this **before** calling `npm run setup-server`
+
 ### Diagnosis
 - NPM takes forever to install? (WSL)
   - You probably didn't install npm on WSL, so its using npm on windows. Install npm on WSL first.

@@ -13,12 +13,20 @@ import {
   InputLabel,
   LinearProgress,
   Paper,
+  Checkbox,
+  FormControlLabel,
+  useMediaQuery,
 } from '@mui/material';
 import DownloadIcon from '@mui/icons-material/Download';
 import axios from 'axios';
 import { ImgComparisonSlider } from '@img-comparison-slider/react';
 import pLimit from 'p-limit';
-
+import GradientPickerPopout from './GradientPickerPopout';
+import ZoomInIcon from '@mui/icons-material/ZoomIn';
+import Magnifier from 'react18-image-magnifier'
+import ModelsInfo from './ModelsInfo';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import GradientIcon from '@mui/icons-material/Gradient';
 
 const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) => {
   const [selectedFile, setSelectedFile] = useState(null);
@@ -32,10 +40,36 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
   const [videoId, setVideoId] = useState(null);
   const [videoProgress, setVideoProgress] = useState(0);
   const [statusMessage, setStatusMessage] = useState('');
+  const [dragOver, setDragOver] = useState(false);
+
+  const [doZoom, setDoZoom] = useState(false);
+
+  const [transparent, setTransparent] = useState(true);
+  const [colorBG, setColorBG] = useState('radial-gradient(circle, #fcdfa4 0%, #ffd83b 100%)'); //useState('radial-gradient(circle, #87CEFA 0%, #1E90FF 100%)');
+
+  const [imageWidth, setImageWidth] = useState('500px'); // Default width
+
+  useEffect(() => {
+    if (selectedFile) {
+      const image = new Image();
+      image.onload = () => {
+        setImageWidth(`${image.width}px`);
+      };
+      image.src = selectedFile;
+    }
+  }, [selectedFile]);
+
 
   const theme = useTheme();
+  const isPortrait = useMediaQuery('(orientation: portrait)');
 
   const fileInputID = "fileInput" + fileID.toString();
+
+  const getModelAPIURL = (method)=>{
+    console.log(method, ModelsInfo[method].apiUrlVar, process.env[ModelsInfo[method].apiUrlVar]);
+
+    return process.env[ModelsInfo[method].apiUrlVar];
+  }
 
   useEffect(() => {
     if (!localSelectedModels) {
@@ -51,7 +85,7 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
     const endpoint = isVideo ? 'remove_background_video' : 'remove_background';
     
     try {
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/${endpoint}/`, formData, {
+      const response = await axios.post(`${getModelAPIURL(method)}/${endpoint}/`, formData, {
         responseType: 'blob',
         withCredentials: false,
       });
@@ -112,6 +146,27 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
     onProcessed();
   }, [processFile, onProcessed, selectedModels, activeMethod]);
 
+  const handleDragOver = (event) => {
+    event.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (event) => {
+    event.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = useCallback((event) => {
+    event.preventDefault();
+    setDragOver(false);
+    
+    const file = event.dataTransfer.files[0];
+    if (file) {
+      const fakeEvent = { target: { files: [file] } };
+      handleFileUpload(fakeEvent);
+    }
+  }, [handleFileUpload]);
+
   const handleMethodChange = (event, newMethod) => {
     if (newMethod !== null) {
       setActiveMethod(newMethod);
@@ -122,9 +177,9 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
     setVideoMethod(event.target.value);
   };
 
-  const pollVideoStatus = useCallback(async (id) => {
+  const pollVideoStatus = useCallback(async (id, url) => {
     try {
-      const response = await axios.get(`${process.env.REACT_APP_API_URL}/status/${id}`, {
+      const response = await axios.get(`${url}/status/${id}`, {
         responseType: 'blob',
         withCredentials:false
       });
@@ -137,7 +192,7 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
         if (data.status === 'processing') {
           setVideoProgress(data.progress);
           setStatusMessage(data.message);
-          setTimeout(() => pollVideoStatus(id), 4000); // Poll every second
+          setTimeout(() => pollVideoStatus(id, url), 4000); // Poll every second
         } else if (data.status === 'error') {
           showErrorToast('Error processing video: ' + data.message);
           setProcessing({ [videoMethod]: false });
@@ -203,12 +258,13 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       formData.append('file', file);
       formData.append('method', videoMethod);
 
-      const response = await axios.post(`${process.env.REACT_APP_API_URL}/remove_background_video/`, formData, {
+      const response = await axios.post(`${getModelAPIURL(videoMethod)}/remove_background_video/`, formData, {
         withCredentials: false,
       });
 
+
       setVideoId(response.data.video_id);
-      pollVideoStatus(response.data.video_id);
+      pollVideoStatus(response.data.video_id, getModelAPIURL(videoMethod));
     } catch (error) {
       console.error('Error processing video:', error);
       setProcessing({ [videoMethod]: false });
@@ -217,59 +273,156 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
   };
 
   const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = processedFiles[activeMethod];
-    
-    // Get the file extension
-    const fileExtension = fileType === 'video' ? 'webm' : 'png';
-    
-    // Create the new filename
-    const newFilename = `${originalFilename.split('.')[0]}_${activeMethod}.${fileExtension}`;
-    
-    link.download = newFilename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
 
-  return (
-    <Box
+    const image = new Image();
+    image.src = processedFiles[activeMethod];
+
+    image.onload = () => {
+        canvas.width = image.width;
+        canvas.height = image.height;
+
+        if (fileType === 'image' && transparent === false) {
+            if (colorBG.includes("gradient")) {
+                const tempDiv = document.createElement("div");
+                tempDiv.style.display = 'none'; // Hide the div while it's appended
+                tempDiv.style.background = colorBG;
+                document.body.appendChild(tempDiv);
+                const computedStyle = window.getComputedStyle(tempDiv);
+                const bgImage = computedStyle.backgroundImage;
+                document.body.removeChild(tempDiv);
+
+                if (bgImage.startsWith('linear-gradient')) {
+                    parseLinearGradient(ctx, bgImage, canvas.width, canvas.height);
+                } else if (bgImage.startsWith('radial-gradient')) {
+                    parseRadialGradient(ctx, bgImage, canvas.width, canvas.height);
+                }
+            } else {
+                ctx.fillStyle = colorBG;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        ctx.drawImage(image, 0, 0);
+
+        const fileExtension = fileType === 'video' ? 'webm' : 'png';
+        const newFilename = `${originalFilename.split('.')[0]}_${activeMethod}.${fileExtension}`;
+
+        const link = document.createElement('a');
+        link.href = canvas.toDataURL(`image/${fileExtension}`);
+        link.download = newFilename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+};
+
+function parseLinearGradient(ctx, bgImage, width, height) {
+    const colors = bgImage.match(/rgba?\([^)]+\)/g);
+    const linearGradient = ctx.createLinearGradient(0, 0, width, 0);
+    colors.forEach((color, index) => {
+        const position = index / (colors.length - 1);
+        linearGradient.addColorStop(position, color);
+    });
+    ctx.fillStyle = linearGradient;
+    ctx.fillRect(0, 0, width, height);
+}
+
+function parseRadialGradient(ctx, bgImage, width, height) {
+    const colors = bgImage.match(/rgba?\([^)]+\)/g);
+    const radialGradient = ctx.createRadialGradient(width / 2, height / 2, 0, width / 2, height / 2, Math.max(width, height) / 2);
+    colors.forEach((color, index) => {
+        const position = index / (colors.length - 1);
+        radialGradient.addColorStop(position, color);
+    });
+    ctx.fillStyle = radialGradient;
+    ctx.fillRect(0, 0, width, height);
+}
+
+
+return (
+  <Box
       sx={{
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         border: (!selectedFile) ? '2px dashed' : 'none',
-        borderColor: theme.palette.text.disabled,
+        borderColor: dragOver ? theme.palette.primary.main : theme.palette.text.disabled,
         borderRadius: 1,
-        p: 4,
+        p: isPortrait ? 0 : 2,
+        mt: 2,
         textAlign: 'center',
         cursor: !selectedFile && !processing ? 'pointer' : 'default',
         position: 'relative',
+        backgroundColor: dragOver ? 'rgba(0, 0, 0, 0.1)' : 'transparent',
+        transition: 'all 0.3s ease',
       }}
       onClick={() => !selectedFile && !Object.values(processing).some(Boolean) && document.getElementById(fileInputID).click()}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
-      {!selectedFile && <input
-        type="file"
-        id={fileInputID}
-        accept="image/*,video/*"
-        style={{ display: 'none' }}
-        onChange={handleFileUpload}
-      />}
+     {!selectedFile && (
+        <input
+          type="file"
+          id={fileInputID}
+          accept="image/*,video/*"
+          style={{ display: 'none' }}
+          onChange={handleFileUpload}
+        />
+      )}
 
-      {selectedFile ? (
-        <Box sx={{ display: 'flex', alignItems: 'flex-start', width: '100%', maxWidth: '1024px' }}>
-           
-          <Box sx={{ flex: 1, maxWidth: '1280px', mr: 2,//border: '2px dashed' ,
-        borderColor: theme.palette.text.disabled, }}>
+    {selectedFile ? (
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: isPortrait ? 'column' : 'row',
+        alignItems: 'flex-start', 
+        width: '100%', 
+        maxWidth: '1024px',
+        position: 'relative',
+      }}>
+         
+        <Box sx={{ 
+          flex: 1, 
+          maxWidth: '1280px', 
+          mr: isPortrait ? 0 : 2,
+          mb: isPortrait ? 2 : 0,
+          width: '100%',
+        }}>
             {fileType === 'image' ? (
               processedFiles[activeMethod] ? (
-                <ImgComparisonSlider class="slider-example-focus">
+                <div 
+                  className={transparent ? "checkerboard" : ""}
+                  style={!transparent ? { background: colorBG } : {}}
+                >
+                  <ToggleButton
+                    value="zoom"
+                    selected={doZoom}
+                    onChange={() => setDoZoom(!doZoom)}
+                    aria-label="zoom in"
+                    size='small'
+                    color='primary'
+                    sx={{
+                      position: 'absolute',
+                      top: '3em', 
+                      left: '3em', 
+                      zIndex: 9999
+                    }}
+                  >
+                    <ZoomInIcon color='primary'/>
+                  </ToggleButton>
+
+                  {doZoom && <Magnifier src={processedFiles[activeMethod]} width={imageWidth}/>}
+               
+                {!doZoom && <ImgComparisonSlider class="slider-example-focus">
                   <img slot="first" src={selectedFile} alt="Original" style={{ width: '100%' }} />
                   <img slot="second" src={processedFiles[activeMethod]} alt="Processed" style={{ width: '100%' }} />
-                  {true && <svg slot="handle" xmlns="http://www.w3.org/2000/svg" width="100" viewBox="-8 -3 16 6">
+                  {false && <svg slot="handle" xmlns="http://www.w3.org/2000/svg" width="100" viewBox="-8 -3 16 6">
                     <path stroke="#549ef7" d="M -5 -2 L -7 0 L -5 2 M -5 -2 L -5 2 M 5 -2 L 7 0 L 5 2 M 5 -2 L 5 2" strokeWidth="1" fill="#549ef7" vectorEffect="non-scaling-stroke"></path>
                   </svg>}
-                </ImgComparisonSlider>
+                </ImgComparisonSlider>}
+                </div>
               ) : (
                 <>
             <div style={{ position: 'relative', display: 'inline-block' }}>
@@ -287,41 +440,57 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
           </Box>
           
           
-          <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-          <Paper  sx={{backgroundColor:'rgba(0,0,0,0)'}} elevation={2}>
-          <Typography variant="body2" color="text.secondary" align="center">
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            position: isPortrait ? 'absolute' : 'static',
+            top: isPortrait ? '1em' : 'auto',
+            right: isPortrait ? '1em' : 'auto',
+            zIndex: isPortrait ? 1000 : 'auto',
+          }}>
+            <Paper sx={{
+              backgroundColor: isPortrait ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0)',
+              padding: isPortrait ? 1 : 0,
+            }} elevation={2}>
+              <Typography variant="body2" color="text.secondary" align="center">
                 Methods
-                </Typography>
-            {selectedFile && localSelectedModels && fileType === 'image' && (
-               
-              <ToggleButtonGroup
-                orientation="vertical"
-                value={activeMethod}
-                exclusive
-                
-                color="warning"
-                onChange={handleMethodChange}
-                aria-label="background removal method"
-              >
-                
-                {Object.entries(localSelectedModels)
-                  .filter(([_, isSelected]) => isSelected)
-                  .map(([method, _]) => (
-                    <ToggleButton 
-                      key={method} 
-                      value={method} 
-                      aria-label={`${method} method`}
-                      disabled={processing[method]}
-                      sx={{ justifyContent: 'flex-start', paddingY: 1 }}
-                    >
-                      {method}
-                      {processing[method] && <CircularProgress size={16} sx={{ ml: 1 }} />}
-                    </ToggleButton>
-                  ))
-                }
-              </ToggleButtonGroup>
-              
-            )}
+              </Typography>
+              {selectedFile && localSelectedModels && fileType === 'image' && (
+                <ToggleButtonGroup
+                  orientation="vertical"
+                  value={activeMethod}
+                  exclusive
+                  color="warning"
+                  onChange={handleMethodChange}
+                  aria-label="background removal method"
+                  sx={{
+                    flexDirection: 'column',
+                    flexWrap: 'wrap',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {Object.entries(localSelectedModels)
+                    .filter(([_, isSelected]) => isSelected)
+                    .map(([method, _]) => (
+                      <ToggleButton 
+                      size="small"
+                        key={method} 
+                        value={method} 
+                        aria-label={`${method} method`}
+                        disabled={processing[method]}
+                        sx={{ 
+                          justifyContent: 'space-between', 
+                        }}
+                      >
+                        <Box display="flex" alignItems="center" justifyContent="flex-start" width="100%">
+                          {isPortrait ? ModelsInfo[method].shortName : ModelsInfo[method].displayName}
+                          {processing[method] && <CircularProgress size={16} sx={{ ml: 1 }} />}
+                        </Box>
+                      </ToggleButton>
+                    ))
+                  }
+                </ToggleButtonGroup>
+              )}
             </Paper>
           {selectedFile && fileType === 'video' && (
         <Box sx={{ mt: 2 }}>
@@ -367,22 +536,40 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       )}
             
             {processedFiles[activeMethod] && (
-              <Button
+              <>
+             
+
+              {!isPortrait && <FormControlLabel
+                  control={<Checkbox checked={transparent} onChange={(e)=>setTransparent(e.target.checked)} />}
+                  label="Transparent"
+                  sx={{color:theme.palette.text.primary}}
+              />}
+
+              {isPortrait && <ToggleButton sx={{backgroundColor:theme.palette.divider, p:0}}  value="transparent" selected={!transparent} onChange={()=>{setTransparent(!transparent)}}><GradientIcon fontSize='large' color='primary'/></ToggleButton>}
+
+              {!transparent && <GradientPickerPopout
+                buttonLabel={!isPortrait ? "Background" : ""}
+                
+                color={colorBG}
+                onChange={newColor => setColorBG(newColor)}
+              />}
+
+                <Button
                 variant="contained"
                 color="primary"
                 onClick={handleDownload}
                 endIcon={<DownloadIcon />}
                 sx={{ mt: 2 }}
               >
-                Download
+                {!isPortrait && "Download"}
               </Button>
+              </>
             )}
           </Box>
         </Box>
-        
       ) : (
         <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
-          Click here to upload an image or video
+          {dragOver ? "Drop your image or video here" : "Click or drag and drop to upload an image or video"}
         </Typography>
       )}
     </Box>

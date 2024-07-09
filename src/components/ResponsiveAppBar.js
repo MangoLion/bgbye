@@ -148,8 +148,8 @@ function ResponsiveAppBar({toggleTheme, darkMode}) {
                 {page}
               </Button>
             ))}
-             <IconButton onClick={toggleTheme} color={darkMode?'primary':'inherit'}>
-            {darkMode ? <LightModeIcon /> : <Brightness3Icon />}
+             <IconButton onClick={toggleTheme} color={darkMode?'primary':'warning'} size="large">
+            {!darkMode ? <LightModeIcon fontSize="inherit" /> : <Brightness3Icon fontSize="inherit" />}
             </IconButton>
           </Box>
 

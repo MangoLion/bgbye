@@ -4,6 +4,7 @@ import { Toaster, toast } from 'react-hot-toast';
 import ImageUpload from './components/ImageUpload';
 import ResponsiveAppBar from './components/ResponsiveAppBar';
 import MethodSelector from './components/MethodSelector';
+import ModelsInfo from './components/ModelsInfo';
 
 // Utility function to show error toast
 const showErrorToast = (message) => {
@@ -25,15 +26,12 @@ function App() {
     const storedTheme = localStorage.getItem(APP_ID + '_theme');
     return storedTheme !== null ? storedTheme === 'true' : false;
   });
-  const [selectedModels, setSelectedModels] = useState({
-    bria: true,
-    inspyrenet: true,
-    u2net: true,
-    u2net_human_seg: true,
-    ormbg: true,
-    'isnet-general-use': true,
-    'isnet-anime': true
-  });
+  const [selectedModels, setSelectedModels] = useState(
+    Object.keys(ModelsInfo).reduce((acc, key) => {
+      acc[key] = true;
+      return acc;
+    }, {})
+  );
 
   const handleProcessed = () => {
     setProcessedPanels((prevCount) => prevCount + 1);

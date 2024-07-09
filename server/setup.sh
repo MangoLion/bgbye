@@ -14,6 +14,7 @@ source venv/bin/activate
 # Install Python dependencies
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 pip install fastapi uvicorn transformers pillow scikit-image transparent-background rembg opencv-python-headless python-multipart requests
+pip install carvekit #--extra-index-url https://download.pytorch.org/whl/cu121
 
 # Ensure stuff is in the PATH
 echo 'export PATH=$PATH:$HOME/.local/bin' >> ~/.bashrc
@@ -24,7 +25,6 @@ if [ -f requirements.txt ]; then
     pip install -r requirements.txt
 fi
 
-echo "Downloading the ORMBG model..."
-wget -O ormbg/ormbg.pth https://huggingface.co/schirrmacher/ormbg/resolve/main/models/ormbg.pth
+mkdir -p ~/.ormbg && echo "Downloading the ORMBG model..." && wget -O ~/.ormbg/ormbg.pth https://huggingface.co/schirrmacher/ormbg/resolve/main/models/ormbg.pth
 
 echo "Setup completed successfully!"

@@ -18,13 +18,30 @@ import asyncio
 from datetime import datetime, timedelta
 import torch
 from ormbg import ORMBGProcessor 
+from typing import Dict
+
+from carvekit.ml.files.models_loc import download_all
+
+download_all()
+
+from carvekit.ml.wrap.u2net import U2NET
+from carvekit.ml.wrap.basnet import BASNET
+from carvekit.ml.wrap.fba_matting import FBAMatting
+from carvekit.ml.wrap.deeplab_v3 import DeepLabV3
+from carvekit.ml.wrap.tracer_b7 import TracerUniversalB7
+from carvekit.api.interface import Interface
+from carvekit.pipelines.postprocessing import MattingMethod
+from carvekit.pipelines.preprocessing import PreprocessingStub
+from carvekit.trimap.generator import TrimapGenerator
+
+carvekit_models: Dict[str, Interface] = {}
 
 # Set up logging
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 # Add ORMBG model initialization
-ormbg_model_path = os.path.join("ormbg", "ormbg.pth")
+ormbg_model_path = os.path.expanduser("~/.ormbg/ormbg.pth")
 try:
     ormbg_processor = ORMBGProcessor(ormbg_model_path)
     if torch.cuda.is_available():
@@ -103,6 +120,30 @@ def process_with_inspyrenet(image):
 def process_with_rembg(image, model='u2net'):
     return rembg_remove(image, session=rembg_models[model])
 
+def process_with_carvekit(image, model='u2net'):
+    # Initialize segmentation network based on model input
+    if model == 'u2net':
+        seg_net = U2NET(device='cuda', batch_size=1)
+    elif model == 'tracer':
+        seg_net = TracerUniversalB7(device='cuda', batch_size=1)
+    elif model == 'basnet':
+        seg_net = BASNET(device='cuda', batch_size=1)
+    elif model == 'deeplab':
+        seg_net = DeepLabV3(device='cuda', batch_size=1)
+    else:
+        raise ValueError("Unsupported model type")
+
+    # Setup the post-processing components
+    fba = FBAMatting(device='cuda', input_tensor_size=2048, batch_size=1)
+    trimap = TrimapGenerator()
+    preprocessing = PreprocessingStub()
+    postprocessing = MattingMethod(matting_module=fba, trimap_generator=trimap, device='cuda')
+
+    interface = Interface(pre_pipe=preprocessing, post_pipe=postprocessing, seg_pipe=seg_net)
+    processed_image = interface([image])[0]
+    
+    return processed_image
+
 @app.post("/remove_background/")
 async def remove_background(file: UploadFile = File(...), method: str = Form(...)):
     try:
@@ -116,17 +157,20 @@ async def remove_background(file: UploadFile = File(...), method: str = Form(...
             inspyrenet_model.model.cuda()
             no_bg_image = process_with_inspyrenet(image)
             inspyrenet_model.model.cpu()
-            torch.cuda.empty_cache()
-        elif method in ['u2net', 'u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
+            
+        elif method in ['u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
             no_bg_image = process_with_rembg(image, model=method)
         elif method == 'ormbg':
             no_bg_image = process_with_ormbg(image)
+        elif method in ['u2net', 'tracer', 'basnet', 'deeplab']:
+            no_bg_image = process_with_carvekit(image, model=method)
         else:
             raise HTTPException(status_code=400, detail="Invalid method")
         
         process_time = time.time() - start_time
         print(f"Background removal time ({method}): {process_time:.2f} seconds")
-
+        
+        torch.cuda.empty_cache()
         with io.BytesIO() as output:
             no_bg_image.save(output, format="PNG")
             content = output.getvalue()
@@ -144,10 +188,12 @@ async def process_frame(frame_path, method):
         processed_frame = await asyncio.to_thread(process_with_bria, img)
     elif method == 'inspyrenet':
         processed_frame = await asyncio.to_thread(process_with_inspyrenet, img)
-    elif method in ['u2net', 'u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
+    elif method in ['u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
         processed_frame = await asyncio.to_thread(process_with_rembg, img, model=method)
     elif method == 'ormbg':
         processed_frame = await asyncio.to_thread(process_with_ormbg, img)
+    elif method in ['u2net', 'tracer', 'basnet', 'deeplab']:
+        processed_frame = await asyncio.to_thread(process_with_carvekit, img, model=method)
     else:
         raise ValueError("Invalid method")
     
@@ -325,7 +371,10 @@ async def get_status(video_id: str):
 
 @app.on_event("startup")
 async def startup_event():
+    global carvekit_models
     asyncio.create_task(cleanup_old_videos())
+    
+
 
 if __name__ == "__main__":
     import uvicorn

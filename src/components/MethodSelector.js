@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
-import { Button, Popover, FormGroup, FormControlLabel, Checkbox, Typography, Divider } from '@mui/material';
+import { Button, Popover, FormGroup, FormControlLabel, Checkbox, Typography, Divider, IconButton } from '@mui/material';
 import ChecklistIcon from '@mui/icons-material/Checklist';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
+import ModelsInfo from './ModelsInfo';
+
 const MethodSelector = ({ selectedModels, handleModelChange }) => {
   const [anchorEl, setAnchorEl] = useState(null);
 
@@ -14,6 +17,10 @@ const MethodSelector = ({ selectedModels, handleModelChange }) => {
 
   const open = Boolean(anchorEl);
   const id = open ? 'method-selector-popover' : undefined;
+
+  const handleInfoClick = (apiUrl) => {
+    window.open(apiUrl, '_blank');
+  };
 
   return (
     <>
@@ -46,7 +53,18 @@ const MethodSelector = ({ selectedModels, handleModelChange }) => {
                     name={model}
                   />
                 }
-                label={model}
+                label={
+                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <span>{ModelsInfo[model].displayName}</span>
+                    <IconButton
+                      size="small"
+                      onClick={() => handleInfoClick(ModelsInfo[model].sourceUrl)}
+                      style={{ marginLeft: '8px' }}
+                    >
+                      <HelpOutlineIcon fontSize="small" />
+                    </IconButton>
+                  </div>
+                }
               />
               {index < Object.keys(selectedModels).length - 1 && (
                 <Divider orientation="horizontal" flexItem />
