@@ -101,6 +101,30 @@ rembg_models = {
     'isnet-anime': new_session('isnet-anime')
 }
 
+# Initialize Carvekit models
+def initialize_carvekit_model(seg_pipe_class, device='cuda'):
+    model = Interface(
+        pre_pipe=PreprocessingStub(),
+        post_pipe=MattingMethod(
+            matting_module=FBAMatting(device=device, input_tensor_size=2048, batch_size=1),
+            trimap_generator=TrimapGenerator(),
+            device=device
+        ),
+        seg_pipe=seg_pipe_class(device=device, batch_size=1)
+    )
+    model.segmentation_pipeline.to('cpu')
+    return model
+
+carvekit_models = {
+    'u2net': initialize_carvekit_model(U2NET),
+    'tracer': initialize_carvekit_model(TracerUniversalB7),
+    'basnet': initialize_carvekit_model(BASNET),
+    'deeplab': initialize_carvekit_model(DeepLabV3)
+}
+
+# Ensure GPU memory is cleared after initialization
+torch.cuda.empty_cache()
+
 def process_with_bria(image):
     result = bria_model(image, return_mask=True)
     mask = result
@@ -196,18 +220,20 @@ async def remove_background(file: UploadFile = File(...), method: str = Form(...
                 return await asyncio.to_thread(process_with_bria, image)
             elif method == 'inspyrenet':
                 async with gpu_lock:
-                    with inspyrenet_video_model_context() as inspyrenet_model:
-                        return await asyncio.to_thread(inspyrenet_model.process, image, type='rgba')
+                    inspyrenet_model.model.to('cuda')
+                    result = await asyncio.to_thread(inspyrenet_model.process, image, type='rgba')
+                    inspyrenet_model.model.to('cpu')
+                    return result
             elif method in ['u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
                 return await asyncio.to_thread(process_with_rembg, image, model=method)
             elif method == 'ormbg':
-                async with gpu_lock:
-                    return await asyncio.to_thread(process_with_ormbg, image)
+                return await asyncio.to_thread(process_with_ormbg, image)
             elif method in ['u2net', 'tracer', 'basnet', 'deeplab']:
                 async with gpu_lock:
-                    with carvekit_video_model_context(method) as carvekit_model:
-                        result = await asyncio.to_thread(carvekit_model, [image])
-                        return result[0]
+                    carvekit_models[method].segmentation_pipeline.to('cuda')
+                    result = await asyncio.to_thread(carvekit_models[method], [image])
+                    carvekit_models[method].segmentation_pipeline.to('cpu')
+                    return result[0]
             else:
                 raise HTTPException(status_code=400, detail="Invalid method")
 

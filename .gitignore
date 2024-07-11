@@ -42,6 +42,27 @@ yarn-error.log*
 .idea/
 .vscode/
 
+# Video file extensions
+*.mp4
+*.mov
+*.avi
+*.mkv
+*.flv
+*.wmv
+*.webm
+*.m4v
+*.mpeg
+*.mpg
+*.3gp
+*.3g2
+*.gif
+
+#video-related temporary files
+*.vob
+*.ogv
+*.ogg
+*.gifv
+
 # Machine Learning model files
 *.pkl
 *.pickle
@@ -57,3 +78,4 @@ yarn-error.log*
 *.pth
 *.torch
 *.bin
+

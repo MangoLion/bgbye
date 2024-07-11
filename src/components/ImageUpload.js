@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   Box,
   Button,
@@ -77,6 +77,10 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
     }
   }, [selectedModels, localSelectedModels]);
 
+  const dropZoneRef = useRef(null);
+ 
+
+
   const processFile = useCallback(async (file, method) => {
     const formData = new FormData();
     formData.append('file', file);
@@ -123,8 +127,8 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       );
       setProcessing(initialProcessing);
   
-      // Create a limit function that allows only 3 concurrent operations
-      const limit = pLimit(3);
+      // Create a limit function that allows only 6 concurrent operations
+      const limit = pLimit(6);
   
       // Create an array of promises
       const promises = Object.entries(currentSelectedModels)
@@ -166,6 +170,29 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
       handleFileUpload(fakeEvent);
     }
   }, [handleFileUpload]);
+
+  const handlePaste = useCallback((event) => {
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.indexOf('image') !== -1) {
+        const blob = items[i].getAsFile();
+        const file = new File([blob], "pasted-image.png", { type: blob.type });
+        const fakeEvent = { target: { files: [file] } };
+        handleFileUpload(fakeEvent);
+        break;
+      }
+    }
+  }, [handleFileUpload]);
+
+  useEffect(() => {
+    const dropZone = dropZoneRef.current;
+    if (dropZone) {
+      dropZone.addEventListener('paste', handlePaste);
+      return () => {
+        dropZone.removeEventListener('paste', handlePaste);
+      };
+    }
+  }, [handlePaste]);
 
   const handleMethodChange = (event, newMethod) => {
     if (newMethod !== null) {
@@ -343,6 +370,14 @@ function parseRadialGradient(ctx, bgImage, width, height) {
 
 return (
   <Box
+      ref={dropZoneRef}
+      tabIndex="0" // Make the box focusable
+      onKeyDown={(e) => {
+        if (e.key === 'v' && (e.ctrlKey || e.metaKey)) {
+          // This allows the paste event to fire when the box is focused
+          // and the user presses Ctrl+V or Cmd+V
+        }
+      }}
       sx={{
         display: 'flex',
         flexDirection: 'column',
@@ -413,7 +448,7 @@ return (
                     <ZoomInIcon color='primary'/>
                   </ToggleButton>
 
-                  {doZoom && <Magnifier src={processedFiles[activeMethod]} width={imageWidth}/>}
+                  {doZoom && <Magnifier src={processedFiles[activeMethod]} width={'100%'}/>}
                
                 {!doZoom && <ImgComparisonSlider class="slider-example-focus">
                   <img slot="first" src={selectedFile} alt="Original" style={{ width: '100%' }} />
@@ -570,7 +605,7 @@ return (
         </Box>
       ) : (
         <Typography variant="h6" sx={{ color: theme.palette.text.primary }}>
-          {dragOver ? "Drop your image or video here" : "Click or drag and drop to upload an image or video"}
+          {dragOver ? "Click, drag and drop, or paste (ctrl-v) to upload an image or video" : "Click, drag and drop, or paste (ctrl-v) to upload an image or video"}
         </Typography>
       )}
     </Box>

@@ -31,7 +31,8 @@
     "deploy": "npm run build && wrangler pages deploy ./build",
     "preview": "npm run build && wrangler pages dev ./build",
     "start-server": "cd server && ./run.sh",
-    "setup-server": "cd server && chmod +x setup.sh && chmod +x run.sh && ./setup.sh"
+    "setup-server": "cd server && chmod +x setup.sh && chmod +x run.sh && ./setup.sh",
+    "start-client": "PORT=9877 react-scripts start"
   },
   "eslintConfig": {
     "extends": [
