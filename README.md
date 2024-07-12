@@ -7,6 +7,8 @@
 - Latest Node.js and npm
 - python3 and python3-pip
 - Windows users must use **Windows Subsystem for Linux (WSL)**
+- Concurrently (optional): for running both server and client at once.
+  `npm i concurrently -g`
 
 ### Steps
 

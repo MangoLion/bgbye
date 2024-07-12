@@ -204,6 +204,10 @@ def carvekit_video_model_context(model_name):
         del seg_net, fba, trimap, preprocessing, postprocessing, interface
         torch.cuda.empty_cache()
 
+
+# Create a global lock for GPU operations
+gpu_lock = asyncio.Lock()
+
 @app.post("/remove_background/")
 async def remove_background(file: UploadFile = File(...), method: str = Form(...)):
     try:
@@ -212,17 +216,16 @@ async def remove_background(file: UploadFile = File(...), method: str = Form(...
         
         start_time = time.time()
 
-        # Create a lock for GPU operations
-        gpu_lock = asyncio.Lock()
-        
         async def process_image():
             if method == 'bria':
                 return await asyncio.to_thread(process_with_bria, image)
             elif method == 'inspyrenet':
                 async with gpu_lock:
-                    inspyrenet_model.model.to('cuda')
-                    result = await asyncio.to_thread(inspyrenet_model.process, image, type='rgba')
-                    inspyrenet_model.model.to('cpu')
+                    try:
+                        inspyrenet_model.model.to('cuda')
+                        result = await asyncio.to_thread(inspyrenet_model.process, image, type='rgba')
+                    finally:
+                        inspyrenet_model.model.to('cpu')
                     return result
             elif method in ['u2net_human_seg', 'isnet-general-use', 'isnet-anime']:
                 return await asyncio.to_thread(process_with_rembg, image, model=method)
@@ -230,9 +233,11 @@ async def remove_background(file: UploadFile = File(...), method: str = Form(...
                 return await asyncio.to_thread(process_with_ormbg, image)
             elif method in ['u2net', 'tracer', 'basnet', 'deeplab']:
                 async with gpu_lock:
-                    carvekit_models[method].segmentation_pipeline.to('cuda')
-                    result = await asyncio.to_thread(carvekit_models[method], [image])
-                    carvekit_models[method].segmentation_pipeline.to('cpu')
+                    try:
+                        carvekit_models[method].segmentation_pipeline.to('cuda')
+                        result = await asyncio.to_thread(carvekit_models[method], [image])
+                    finally:
+                        carvekit_models[method].segmentation_pipeline.to('cpu')
                     return result[0]
             else:
                 raise HTTPException(status_code=400, detail="Invalid method")
