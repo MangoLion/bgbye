@@ -276,10 +276,11 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
 
       //DISABLED VIDEO LENGTH LIMIT
       //if (estimatedFrameCount > 250) {
-      //  showErrorToast(`Video too long (${estimatedFrameCount} estimated frames). Maximum allowed: 250 frames.`);
+      // if (duration > 10){
+      //  showErrorToast(`Video too long (${estimatedFrameCount} estimated frames). Maximum allowed: 10 seconds.`);
       //  setProcessing({ [videoMethod]: false });
       //  return;
-      //}
+      // }
 
       const formData = new FormData();
       formData.append('file', file);

@@ -12,7 +12,7 @@ python3 -m venv venv
 source venv/bin/activate
 
 # Install Python dependencies
-pip install numpy<2 #WEIRD IMPORT ERROR WORKAROUND FOR REMBG
+pip install numpy==1.26.4 #WEIRD IMPORT ERROR WORKAROUND FOR REMBG
 pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
 pip install fastapi uvicorn transformers pillow scikit-image transparent-background rembg opencv-python-headless python-multipart requests
 pip install carvekit #--extra-index-url https://download.pytorch.org/whl/cu121
