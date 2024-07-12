@@ -300,50 +300,62 @@ const ImageUpload = ({ onProcessed, fileID, selectedModels, showErrorToast }) =>
   };
 
   const handleDownload = () => {
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    const image = new Image();
-    image.src = processedFiles[activeMethod];
-
-    image.onload = () => {
-        canvas.width = image.width;
-        canvas.height = image.height;
-
-        if (fileType === 'image' && transparent === false) {
-            if (colorBG.includes("gradient")) {
-                const tempDiv = document.createElement("div");
-                tempDiv.style.display = 'none'; // Hide the div while it's appended
-                tempDiv.style.background = colorBG;
-                document.body.appendChild(tempDiv);
-                const computedStyle = window.getComputedStyle(tempDiv);
-                const bgImage = computedStyle.backgroundImage;
-                document.body.removeChild(tempDiv);
-
-                if (bgImage.startsWith('linear-gradient')) {
-                    parseLinearGradient(ctx, bgImage, canvas.width, canvas.height);
-                } else if (bgImage.startsWith('radial-gradient')) {
-                    parseRadialGradient(ctx, bgImage, canvas.width, canvas.height);
-                }
-            } else {
-                ctx.fillStyle = colorBG;
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-            }
-        }
-
-        ctx.drawImage(image, 0, 0);
-
-        const fileExtension = fileType === 'video' ? 'webm' : 'png';
-        const newFilename = `${originalFilename.split('.')[0]}_${activeMethod}.${fileExtension}`;
-
+    if (fileType === 'video') {
+        // Directly download the video file as a .webm
+        const newFilename = `${originalFilename.split('.')[0]}_${activeMethod}.webm`;
         const link = document.createElement('a');
-        link.href = canvas.toDataURL(`image/${fileExtension}`);
+        link.href = processedFiles[activeMethod];
         link.download = newFilename;
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
-    };
+    } else {
+        // Handle image downloading with canvas manipulations
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const image = new Image();
+        image.src = processedFiles[activeMethod];
+
+        image.onload = () => {
+            canvas.width = image.width;
+            canvas.height = image.height;
+
+            if (fileType === 'image' && transparent === false) {
+                if (colorBG.includes("gradient")) {
+                    const tempDiv = document.createElement("div");
+                    tempDiv.style.display = 'none'; // Hide the div while it's appended
+                    tempDiv.style.background = colorBG;
+                    document.body.appendChild(tempDiv);
+                    const computedStyle = window.getComputedStyle(tempDiv);
+                    const bgImage = computedStyle.backgroundImage;
+                    document.body.removeChild(tempDiv);
+
+                    if (bgImage.startsWith('linear-gradient')) {
+                        parseLinearGradient(ctx, bgImage, canvas.width, canvas.height);
+                    } else if (bgImage.startsWith('radial-gradient')) {
+                        parseRadialGradient(ctx, bgImage, canvas.width, canvas.height);
+                    }
+                } else {
+                    ctx.fillStyle = colorBG;
+                    ctx.fillRect(0, 0, canvas.width, canvas.height);
+                }
+            }
+
+            ctx.drawImage(image, 0, 0);
+
+            const fileExtension = 'png';
+            const newFilename = `${originalFilename.split('.')[0]}_${activeMethod}.${fileExtension}`;
+
+            const link = document.createElement('a');
+            link.href = canvas.toDataURL(`image/${fileExtension}`);
+            link.download = newFilename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        };
+    }
 };
+
 
 function parseLinearGradient(ctx, bgImage, width, height) {
     const colors = bgImage.match(/rgba?\([^)]+\)/g);
@@ -493,6 +505,7 @@ return (
               {selectedFile && localSelectedModels && fileType === 'image' && (
                 <ToggleButtonGroup
                   orientation="vertical"
+                  fullWidth
                   value={activeMethod}
                   exclusive
                   color="warning"
@@ -509,6 +522,7 @@ return (
                     .map(([method, _]) => (
                       <ToggleButton 
                       size="small"
+                      
                         key={method} 
                         value={method} 
                         aria-label={`${method} method`}
@@ -575,15 +589,15 @@ return (
               <>
              
 
-              {!isPortrait && <FormControlLabel
+              {!isPortrait && fileType=='image' && <FormControlLabel
                   control={<Checkbox checked={transparent} onChange={(e)=>setTransparent(e.target.checked)} />}
                   label="Transparent"
                   sx={{color:theme.palette.text.primary}}
               />}
 
-              {isPortrait && <ToggleButton sx={{backgroundColor:theme.palette.divider, p:0}}  value="transparent" selected={!transparent} onChange={()=>{setTransparent(!transparent)}}><GradientIcon fontSize='large' color='primary'/></ToggleButton>}
+              {isPortrait && fileType=='image' && <ToggleButton sx={{backgroundColor:theme.palette.divider, p:0}}  value="transparent" selected={!transparent} onChange={()=>{setTransparent(!transparent)}}><GradientIcon fontSize='large' color='primary'/></ToggleButton>}
 
-              {!transparent && <GradientPickerPopout
+              {!transparent && fileType=='image' &&  <GradientPickerPopout
                 buttonLabel={!isPortrait ? "Background" : ""}
                 
                 color={colorBG}

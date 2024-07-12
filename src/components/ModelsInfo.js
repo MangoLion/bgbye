@@ -13,25 +13,25 @@ const ModelsInfo = {
         apiUrlVar: 'REACT_APP_INSPYRENET_URL'
     },
     u2net: { 
-        displayName: 'U2Net(CarveKit)', 
+        displayName: 'U2Net', 
         shortName: "U2Net",
         sourceUrl: 'https://github.com/OPHoperHPO/image-background-remove-tool#%EF%B8%8F-how-does-it-work', 
         apiUrlVar: 'REACT_APP_U2NET_URL'
     },
     tracer: { 
-        displayName: 'Tracer-B7(CarveKit)', 
+        displayName: 'Tracer-B7', 
         shortName: "Tracer",
         sourceUrl: 'https://github.com/OPHoperHPO/image-background-remove-tool#%EF%B8%8F-how-does-it-work', 
         apiUrlVar: 'REACT_APP_TRACER_URL'
     },
     basnet: { 
-        displayName: 'BASNet(CarveKit)', 
+        displayName: 'BASNet', 
         shortName: "BASNet",
         sourceUrl: 'https://github.com/OPHoperHPO/image-background-remove-tool#%EF%B8%8F-how-does-it-work', 
         apiUrlVar: 'REACT_APP_BASNET_URL'
     },
     deeplab: { 
-        displayName: 'DeepLabV3(CarveKit)', 
+        displayName: 'DeepLabV3', 
         shortName: "DeepLab",
         sourceUrl: 'https://github.com/OPHoperHPO/image-background-remove-tool#%EF%B8%8F-how-does-it-work', 
         apiUrlVar: 'REACT_APP_DEEPLAB_URL'
